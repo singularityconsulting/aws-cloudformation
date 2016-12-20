@@ -43,9 +43,9 @@
             "InstanceType" : {
                 "Description" : "Type of EC2 instance to launch.",
                 "Type" : "String",
-                "Default" : "t2.large",
+                "Default" : "i2.4xlarge",
                 "AllowedValues" : [ "t2.micro", "t2.small", "t2.medium", "t2.large",
-                        "m3.medium", "m3.large", "m3.xlarge", "m3.2xlarge", 
+                        "m3.medium", "m3.large", "m3.xlarge", "m3.2xlarge",
                         "m4.large", "m4.xlarge", "m4.2xlarge", "m4.4xlarge", "m4.10xlarge",
                         "c3.large", "c3.xlarge", "c3.2xlarge", "c3.4xlarge", "c3.8xlarge",
                         "c4.large", "c4.xlarge", "c4.2xlarge", "c4.4xlarge", "c4.8xlarge",
@@ -56,7 +56,7 @@
         "EBS" : {
             "Description" : "Size of EBS SSD volume in GB. The volume will attach under /dev/sdg. Limit of 16000. Enter 0 to not use EBS.",
             "Type" : "Number",
-            "Default" : "50",
+            "Default" : "400",
             "MinValue" : "0",
             "MaxValue" : "16000"
         },
@@ -82,7 +82,7 @@
     "Conditions" : {
         "NotUsingEBS" : { "Fn::Equals" : [ { "Ref" : "EBS" }, 0  ] }
     },
-  
+
     "Resources" : {
         "ClusterRole" : {
              "Type": "AWS::IAM::Role",
@@ -206,7 +206,7 @@
                                    "    sed -i \"/interval/i \\\t\tmesh-seed-address-port $i 3002\" $CONF; done\n",
                                    "  CODE=$(curl -Is ",{ "Ref" :"NamespaceFile" }," | head -n 1 | cut -d$' ' -f2)\n",
                                    "  if [ \"$CODE\" != \"200\" ]; then echo 'Namespace File not found' >> /var/log/awsuserdatascript\n",
-                                   "  else sed -i '/namespace test/,$d' $CONF\n", 
+                                   "  else sed -i '/namespace test/,$d' $CONF\n",
                                    "    curl -s ",{ "Ref" :"NamespaceFile" }," >> $CONF; fi\n",
                                    "  /etc/init.d/aerospike start\n",
                                    "  /etc/init.d/amc start\n",
@@ -348,15 +348,28 @@
                 "KeyName" : { "Ref" : "KeyPair" },
                 "BlockDeviceMappings" : { "Fn::If" : [ "NotUsingEBS",
                     { "Ref" : "AWS::NoValue" },
-                    [ {
-                    "DeviceName" : "/dev/sdg",
-                    "Ebs" : { "VolumeSize" : {"Ref" : "EBS" },
-                             "VolumeType" : "gp2" }
-                    } ]
+                    [
+                      {
+                        "DeviceName" : "/dev/sdg",
+                        "Ebs" : { "VolumeSize" : {"Ref" : "EBS" }, "VolumeType" : "gp2" }
+                      },
+                      {
+                        "DeviceName" : "/dev/sdh",
+                        "Ebs" : { "VolumeSize" : {"Ref" : "EBS" }, "VolumeType" : "gp2" }
+                      },
+                      {
+                        "DeviceName" : "/dev/sdi",
+                        "Ebs" : { "VolumeSize" : {"Ref" : "EBS" }, "VolumeType" : "gp2" }
+                      },
+                      {
+                        "DeviceName" : "/dev/sdj",
+                        "Ebs" : { "VolumeSize" : {"Ref" : "EBS" }, "VolumeType" : "gp2" }
+                      },
+                    ]
                 ] },
                 "IamInstanceProfile" : { "Ref" : "ClusterInstanceProfile" },
                 "ImageId" : { "Fn::FindInMap" : [ "RegionMap",  {"Ref" : "AWS::Region"} ,  "name"] },
-                "AssociatePublicIpAddress" : "true",
+                "AssociatePublicIpAddress" : "false",
                 "PlacementTenancy" : { "Ref" : "Tenancy" },
                 "SecurityGroups" : [ { "Fn::GetAtt" : [ "InstanceSecurityGroup", "GroupId" ] } ],
                 "UserData" : { "Fn::Base64" : { "Fn::Join" : ["", [
@@ -367,7 +380,7 @@
                     "         --stack ", { "Ref" : "AWS::StackName" },
                     "         --resource LaunchConfig ",
                     "         --region ", { "Ref" : "AWS::Region" }, "\n",
-    
+
                     "/opt/aws/bin/cfn-signal -e $? ",
                     "         --stack ", { "Ref" : "AWS::StackName" },
                     "         --resource ClusterGroup ",
@@ -398,7 +411,7 @@
                     "FromPort" : "22",
                     "ToPort" : "22",
                     "CidrIp" : { "Ref" : "PermitSSH" }
-    
+
                 },
                 {
                     "IpProtocol" : "icmp",

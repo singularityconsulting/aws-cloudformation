@@ -1,0 +1,14 @@
+namespace fourleaf {
+    replication-factor 2
+    memory-size 120G
+    default-ttl 0
+
+    storage-engine device {
+            defrag-sleep 0
+            device /dev/sdb /dev/sdg
+            device /dev/sdc /dev/sdh
+            device /dev/sdd /dev/sdi
+            device /dev/sde /dev/sdj
+            write-block-size 128K
+    }
+}
